@@ -103,7 +103,7 @@ export class TropicalTrees {
                 child.material = this._mapMaterial(child.material);
             }
 
-            child.castShadow = true;
+            child.castShadow = false;
             child.receiveShadow = true;
 
             child.geometry.computeBoundingBox();

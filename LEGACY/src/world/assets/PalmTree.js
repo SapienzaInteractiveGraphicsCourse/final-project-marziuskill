@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 
-export class Bush {
+export class PalmTree {
     constructor(scene) {
         this.scene = scene;
         this.loaded = false;
@@ -17,23 +17,28 @@ export class Bush {
         this.ready = this._load();
     }
 
-    _loadTexture(filename) {
+    _loadTexture(filename, colorSpace = THREE.NoColorSpace) {
         const texture = this.textureLoader.load(
-            `./assets/models/environment/bush/textures/${filename}`
+            `./assets/models/environment/palm-tree/textures/${filename}`
         );
 
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.flipY = true;
+        texture.colorSpace = colorSpace;
+        texture.flipY = false;
 
         return texture;
     }
 
     _createMaterial() {
+        const map = this._loadTexture(
+            "palm_basecolor.png",
+            THREE.SRGBColorSpace
+        );
+
         return new THREE.MeshStandardMaterial({
-            map: this._loadTexture("bush_basecolor.png"),
+            map,
             roughness: 0.9,
             metalness: 0,
-            alphaTest: 0.4,
+            alphaTest: 0.45,
             side: THREE.DoubleSide
         });
     }
@@ -43,17 +48,21 @@ export class Bush {
             const loader = new GLTFLoader();
 
             loader.load(
-                "./assets/models/environment/bush/bush.glb",
+                "./assets/models/environment/palm-tree/palm-tree.glb",
 
                 (gltf) => {
                     let sourceMesh = null;
 
                     gltf.scene.traverse((child) => {
-                        if (child.isMesh && !sourceMesh) sourceMesh = child;
+                        if (child.isMesh && !sourceMesh) {
+                            sourceMesh = child;
+                        }
                     });
 
                     if (!sourceMesh) {
-                        reject(new Error("Bush: no mesh found in bush.glb"));
+                        reject(
+                            new Error("PalmTree: no mesh found in palm-tree.glb")
+                        );
                         return;
                     }
 
@@ -63,13 +72,15 @@ export class Bush {
                     this.geometry.computeBoundingBox();
                     this.geometry.computeBoundingSphere();
 
-                    const size = new THREE.Vector3();
-                    this.geometry.boundingBox.getSize(size);
-
                     this.loaded = true;
 
+                    const box = this.geometry.boundingBox;
+                    const size = new THREE.Vector3();
+
+                    box.getSize(size);
+
                     console.log(
-                        `Bush loaded: size=(${size.x.toFixed(2)}, ${size.y.toFixed(2)}, ${size.z.toFixed(2)})`
+                        `Palm Tree loaded: size=(${size.x.toFixed(2)}, ${size.y.toFixed(2)}, ${size.z.toFixed(2)})`
                     );
 
                     resolve(this);
@@ -78,7 +89,7 @@ export class Bush {
                 undefined,
 
                 (error) => {
-                    console.error("Error loading Bush:", error);
+                    console.error("Error loading Palm Tree:", error);
                     reject(error);
                 }
             );
@@ -89,27 +100,24 @@ export class Bush {
         position = new THREE.Vector3(),
         heading = 0,
         scale = 1,
-        tiltX = 0,
-        tiltZ = 0,
         parent = this.scene,
-        name = "Bush_Instance"
+        name = "PalmTree_Instance"
     } = {}) {
         if (!this.loaded) {
-            console.warn("Bush.create() called before asset finished loading.");
+            console.warn("PalmTree.create() called before asset finished loading.");
             return null;
         }
 
-        const mesh = new THREE.Mesh(this.geometry, this.material);
+        const mesh = new THREE.Mesh(
+            this.geometry,
+            this.material
+        );
 
         mesh.name = name;
-        mesh.position.copy(position);
-        mesh.rotation.set(tiltX, heading, tiltZ);
 
-        if (typeof scale === "number") {
-            mesh.scale.setScalar(scale);
-        } else {
-            mesh.scale.copy(scale);
-        }
+        mesh.position.copy(position);
+        mesh.rotation.y = heading;
+        mesh.scale.setScalar(scale);
 
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -122,15 +130,15 @@ export class Bush {
 
     createInstanced(placements, {
         parent = this.scene,
-        name = "Bush_Instanced"
+        name = "PalmTree_Instanced"
     } = {}) {
         if (!this.loaded) {
-            console.warn("Bush.createInstanced() called before asset finished loading.");
+            console.warn("PalmTree.createInstanced() called before asset finished loading.");
             return null;
         }
 
         if (!placements || placements.length === 0) {
-            console.warn("Bush.createInstanced(): no placements supplied.");
+            console.warn("PalmTree.createInstanced(): no placements supplied.");
             return null;
         }
 
@@ -141,7 +149,7 @@ export class Bush {
         );
 
         mesh.name = name;
-        mesh.castShadow = true;
+        mesh.castShadow = false;
         mesh.receiveShadow = true;
 
         const dummy = new THREE.Object3D();
@@ -156,7 +164,12 @@ export class Bush {
             } = placement;
 
             dummy.position.copy(position);
-            dummy.rotation.set(tiltX, heading, tiltZ);
+
+            dummy.rotation.set(
+                tiltX,
+                heading,
+                tiltZ
+            );
 
             if (typeof scale === "number") {
                 dummy.scale.setScalar(scale);
@@ -165,6 +178,7 @@ export class Bush {
             }
 
             dummy.updateMatrix();
+
             mesh.setMatrixAt(index, dummy.matrix);
         });
 

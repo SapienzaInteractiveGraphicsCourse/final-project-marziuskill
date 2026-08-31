@@ -31,7 +31,7 @@ scene.background = new THREE.Color(0x87b9d6);
 
 const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(1);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1;
@@ -96,6 +96,20 @@ setCamera(
     new THREE.Vector3(135, 6.5, -900)
 );
 
+function setAlliedWestView() {
+    setCamera(
+        new THREE.Vector3(-300, 90, -210),
+        new THREE.Vector3(-430, 18, -340)
+    );
+}
+
+function setAlliedEastView() {
+    setCamera(
+        new THREE.Vector3(540, 125, -320),
+        new THREE.Vector3(390, 30, -460)
+    );
+}
+
 renderer.domElement.addEventListener("wheel", (event) => {
     event.preventDefault();
 
@@ -149,7 +163,7 @@ scene.add(sun.target);
 const ocean = new Ocean(scene, {
     size: WORLD_LAYOUT.worldSize,
     seaLevel: WORLD_LAYOUT.seaLevel,
-    segments: 220
+    segments: 120
 });
 
 const terrainIslands = WORLD_LAYOUT.islands.map(config =>
@@ -159,16 +173,24 @@ const terrainIslands = WORLD_LAYOUT.islands.map(config =>
     })
 );
 
-//const homeRunway = new Runway(scene, WORLD_LAYOUT.runways.home);
+const debugTerrainMaterial = new THREE.MeshLambertMaterial({
+    color: 0x567d46
+});
+
+for (const island of terrainIslands) {
+    island.mesh.material = debugTerrainMaterial;
+}
+
+const homeRunway = new Runway(scene, WORLD_LAYOUT.runways.home);
 const enemyRunway = new Runway(scene, WORLD_LAYOUT.runways.enemy);
 
-//const homeAirfield = new AirfieldSurface(scene, WORLD_LAYOUT.airfields.home);
+const homeAirfield = new AirfieldSurface(scene, WORLD_LAYOUT.airfields.home);
 const enemyAirfield = new AirfieldSurface(scene, WORLD_LAYOUT.airfields.enemy);
 
-//const homeIsland = terrainIslands.find(island => island.id === "home");
-//const alliedWestIsland = terrainIslands.find(island => island.id === "alliedWest");
-//const alliedEastIsland = terrainIslands.find(island => island.id === "alliedEast");
-//const enemyFortIsland = terrainIslands.find(island => island.id === "enemyFort");
+const homeIsland = terrainIslands.find(island => island.id === "home");
+const alliedWestIsland = terrainIslands.find(island => island.id === "alliedWest");
+const alliedEastIsland = terrainIslands.find(island => island.id === "alliedEast");
+const enemyFortIsland = terrainIslands.find(island => island.id === "enemyFort");
 const enemyAirbaseIsland = terrainIslands.find(island => island.id === "enemyAirbase");
 
 window.terrainIslands = terrainIslands;
@@ -189,12 +211,22 @@ function terrainPosition(layout, terrain, yOffset = 0) {
 }
 
 function populateIslandVegetation(terrain, profile, exclusions = []) {
+    const start = performance.now();
+
     const vegetation = new VegetationPopulator(scene, terrain, {
         ...profile,
         exclusions
     });
 
-    vegetation.populate();
+    vegetation.populatePromise = vegetation.populate().then(result => {
+        console.log(
+            `Vegetation ${terrain.id} ready in ` +
+            `${((performance.now() - start) / 1000).toFixed(2)} s`
+        );
+
+        return result;
+    });
+
     return vegetation;
 }
 
@@ -302,7 +334,7 @@ renderer.domElement.addEventListener("click", (event) => {
 // -----------------------------------------------------------------------------
 // HOME BASE
 // -----------------------------------------------------------------------------
-/*
+
 const homeRunwayLayout = WORLD_LAYOUT.runways.home;
 const homeAirfieldLayout = WORLD_LAYOUT.airfields.home;
 const homeBaseLayout = WORLD_LAYOUT.homeBase;
@@ -385,7 +417,7 @@ const militaryTents = tentLayouts.map(layout =>
         scale: layout.scale
     })
 );
-*/
+
 const storageTypeMap = {
     crate: CratesAndBarrels.TYPES.CRATE,
     barrelA: CratesAndBarrels.TYPES.BARREL_A,
@@ -394,7 +426,7 @@ const storageTypeMap = {
     coveredCrates: CratesAndBarrels.TYPES.COVERED_CRATES,
     coveredBarrels: CratesAndBarrels.TYPES.COVERED_BARRELS
 };
-/*
+
 const homeStorage = new CratesAndBarrels(scene);
 
 homeStorage.ready.then(() => {
@@ -447,7 +479,7 @@ const alliedEastVegetation = populateIslandVegetation(
 // -----------------------------------------------------------------------------
 
 const enemyFortLayout = WORLD_LAYOUT.enemyFortBase;
-*/
+
 
 const battlefieldTypeMap = {
     bunker: BattlefieldProps.TYPES.BUNKER,
@@ -459,7 +491,7 @@ const battlefieldTypeMap = {
     metalHedgehog: BattlefieldProps.TYPES.METAL_HEDGEHOG,
     woodenHedgehogA: BattlefieldProps.TYPES.WOODEN_HEDGEHOG_A
 };
-/*
+
 const enemyBattlefield = new BattlefieldProps(scene);
 
 function createEnemyBattlefieldItem(item, typeOverride = null) {
@@ -570,7 +602,7 @@ const enemyFortVegetation = populateIslandVegetation(
     VEGETATION_PROFILES.enemyFort,
     enemyFortVegetationExclusions
 );
-*/
+
 // -----------------------------------------------------------------------------
 // ENEMY AIRBASE
 // -----------------------------------------------------------------------------
@@ -776,7 +808,8 @@ window.addEventListener("keydown", (event) => {
     if (key === "2") setTopView();
     if (key === "3") setFrontView();
     if (key === "4") setSideView();
-    if (key === "5") setEnemyAirbaseView();
+    if (key === "5") setAlliedWestView();
+    if (key === "6") setAlliedEastView();
 });
 
 // -----------------------------------------------------------------------------
@@ -793,6 +826,48 @@ window.addEventListener("resize", () => {
 // -----------------------------------------------------------------------------
 // LOOP
 // -----------------------------------------------------------------------------
+
+function printTriangleStats() {
+    const stats = [];
+
+    scene.traverse(obj => {
+        if (!obj.isMesh || !obj.geometry) return;
+
+        const geometry = obj.geometry;
+        const triangleCount = geometry.index
+            ? geometry.index.count / 3
+            : geometry.attributes.position.count / 3;
+
+        const instances = obj.isInstancedMesh ? obj.count : 1;
+        const total = triangleCount * instances;
+
+        stats.push({
+            name: obj.name || obj.type,
+            trianglesPerInstance: Math.round(triangleCount),
+            instances,
+            totalTriangles: Math.round(total)
+        });
+    });
+
+    stats.sort((a, b) => b.totalTriangles - a.totalTriangles);
+
+    console.table(stats.slice(0, 25));
+}
+
+const vegetationPopulators = [
+    homeVegetation,
+    alliedWestVegetation,
+    alliedEastVegetation,
+    enemyFortVegetation,
+    enemyAirbaseVegetation
+];
+
+Promise.all(
+    vegetationPopulators.map(v => v.populatePromise)
+).then(() => {
+    console.log("ALL VEGETATION READY");
+    printTriangleStats();
+});
 
 const clock = new THREE.Clock();
 

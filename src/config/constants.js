@@ -1,0 +1,38 @@
+export const TABLE = {
+  PLAY_WIDTH: 1.27,
+  PLAY_LENGTH: 2.54,
+
+  // World-space height of the cloth surface.
+  CLOTH_Y: 0.78,
+
+  BED_THICKNESS: 0.05,
+
+  FRAME_WIDTH: 0.12,
+  FRAME_HEIGHT: 0.12,
+
+  CUSHION_DEPTH: 0.055,
+  CUSHION_HEIGHT: 0.037,
+
+  LEG_HEIGHT: 0.68,
+  LEG_SIZE: 0.12,
+
+  CORNER_POCKET_RADIUS: 0.062,
+  SIDE_POCKET_RADIUS: 0.065,
+
+  POCKET_VISUAL_DEPTH: 0.055
+};
+
+export const CAMERA = {
+  FOV: 45,
+  NEAR: 0.01,
+  FAR: 100,
+  INITIAL_POSITION: [3.3, 2.7, 3.8],
+  TARGET: [0, TABLE.CLOTH_Y, 0]
+};
+
+export const LIGHTING = {
+  AMBIENT_INTENSITY: 0.35,
+  KEY_INTENSITY: 65,
+  KEY_HEIGHT: 3.15,
+  KEY_DISTANCE: 10
+};
