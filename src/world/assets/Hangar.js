@@ -30,7 +30,7 @@ export class Hangar {
 
         this.scene.add(this.root);
 
-        this._load(textureRepeat);
+        this.ready = this._load(textureRepeat);
     }
 
     _loadTexture(path, colorSpace, repeat) {
@@ -78,66 +78,71 @@ export class Hangar {
     }
 
     _load(textureRepeat) {
-        const loader = new GLTFLoader();
-        const material = this._createMaterial(textureRepeat);
+        return new Promise((resolve, reject) => {
+            const loader = new GLTFLoader();
+            const material = this._createMaterial(textureRepeat);
 
-        loader.load(
-            "./assets/models/environment/hangar/hangar.glb",
-            (gltf) => {
-                this.model = gltf.scene;
+            loader.load(
+                "./assets/models/environment/hangar/hangar.glb",
+                (gltf) => {
+                    this.model = gltf.scene;
 
-                this.model.traverse((child) => {
-                    if (!child.isMesh) return;
+                    this.model.traverse((child) => {
+                        if (!child.isMesh) return;
 
-                    child.material = material;
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                });
+                        child.material = material;
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    });
 
-                this.root.add(this.model);
+                    this.root.add(this.model);
 
-                this.entrance = this.model.getObjectByName("HangarEntrance");
-                this.servicePoint = this.model.getObjectByName("HangarService");
+                    this.entrance = this.model.getObjectByName("HangarEntrance");
+                    this.servicePoint = this.model.getObjectByName("HangarService");
 
-                if (!this.entrance) {
-                    console.error("HangarEntrance not found.");
-                }
+                    if (!this.entrance) {
+                        console.error("HangarEntrance not found.");
+                    }
 
-                if (!this.servicePoint) {
-                    console.error("HangarService not found.");
-                }
+                    if (!this.servicePoint) {
+                        console.error("HangarService not found.");
+                    }
 
-                this.root.updateWorldMatrix(true, true);
+                    this.root.updateWorldMatrix(true, true);
 
-                this.bounds.setFromObject(this.root, true);
-                this.bounds.getSize(this.boundsSize);
+                    this.bounds.setFromObject(this.root, true);
+                    this.bounds.getSize(this.boundsSize);
 
-                console.log(
-                    `Hangar loaded: size=(${this.boundsSize.x.toFixed(2)}, ${this.boundsSize.y.toFixed(2)}, ${this.boundsSize.z.toFixed(2)})`
-                );
-
-                if (this.entrance) {
                     console.log(
-                        `HangarEntrance local: (${this.entrance.position.x.toFixed(2)}, ${this.entrance.position.y.toFixed(2)}, ${this.entrance.position.z.toFixed(2)})`
+                        `Hangar loaded: size=(${this.boundsSize.x.toFixed(2)}, ${this.boundsSize.y.toFixed(2)}, ${this.boundsSize.z.toFixed(2)})`
                     );
+
+                    if (this.entrance) {
+                        console.log(
+                            `HangarEntrance local: (${this.entrance.position.x.toFixed(2)}, ${this.entrance.position.y.toFixed(2)}, ${this.entrance.position.z.toFixed(2)})`
+                        );
+                    }
+
+                    if (this.servicePoint) {
+                        console.log(
+                            `HangarService local: (${this.servicePoint.position.x.toFixed(2)}, ${this.servicePoint.position.y.toFixed(2)}, ${this.servicePoint.position.z.toFixed(2)})`
+                        );
+                    }
+
+                    this._createDebugObjects();
+
+                    this.loaded = true;
+                    console.log("Hangar loaded successfully.");
+
+                    resolve(this);
+                },
+                undefined,
+                (error) => {
+                    console.error("Error loading hangar:", error);
+                    reject(error);
                 }
-
-                if (this.servicePoint) {
-                    console.log(
-                        `HangarService local: (${this.servicePoint.position.x.toFixed(2)}, ${this.servicePoint.position.y.toFixed(2)}, ${this.servicePoint.position.z.toFixed(2)})`
-                    );
-                }
-
-                this._createDebugObjects();
-
-                this.loaded = true;
-                console.log("Hangar loaded successfully.");
-            },
-            undefined,
-            (error) => {
-                console.error("Error loading hangar:", error);
-            }
-        );
+            );
+        });
     }
 
     _createDebugObjects() {
