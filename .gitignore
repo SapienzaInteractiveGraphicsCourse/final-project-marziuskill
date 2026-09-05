@@ -1,3 +1,4 @@
-external_assets/
-blender/
-libs/
+node_modules/
+billiards*.zip
+public/blender/
+public/audio/_sources/

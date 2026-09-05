@@ -1,0 +1,642 @@
+{
+    "version": "0.17",
+    "model": "public/models/billiards_assets.glb",
+    "source_uploaded_file": "billiards_assets(3).glb",
+    "ball_assets": [
+        "Ball_00_Cue",
+        "Ball_01",
+        "Ball_02",
+        "Ball_03",
+        "Ball_04",
+        "Ball_05",
+        "Ball_06",
+        "Ball_07",
+        "Ball_08",
+        "Ball_09",
+        "Ball_10",
+        "Ball_11",
+        "Ball_12",
+        "Ball_13",
+        "Ball_14",
+        "Ball_15"
+    ],
+    "pockets": [
+        "Pocket_Left_Near",
+        "Pocket_Left_Middle",
+        "Pocket_Left_Far",
+        "Pocket_Right_Near",
+        "Pocket_Right_Middle",
+        "Pocket_Right_Far"
+    ],
+    "rails": [
+        "Rail_Left_Near",
+        "Rail_Left_Far",
+        "Rail_Right_Near",
+        "Rail_Right_Far",
+        "Rail_Near",
+        "Rail_Far"
+    ],
+    "other_required_objects": [
+        "PoolTable",
+        "PlayingSurface",
+        "Cue",
+        "Rack",
+        "Rubber",
+        "BallReturn"
+    ],
+    "notes": [
+        "All 16 ball meshes keep their original UV coordinates.",
+        "Visible objects keep the existing external PBR texture atlas.",
+        "BallReturn is hidden visually and used as an asset-driven internal collision mesh.",
+        "No artificial lateral return force or teleport is used."
+    ],
+    "ball_return": {
+        "mode": "nearest-opening two-leg axis-aligned transport",
+        "target_placement": "two ends of transformed BallReturn long axis, centered on short axis",
+        "route": [
+            "LONG_AXIS first, preserving entry short-axis coordinate",
+            "SHORT_AXIS second, toward final mouth coordinate"
+        ],
+        "target_selection": "geometrically nearest target at BALL_POCKETED",
+        "target_capture_radius_m": 0.008,
+        "stop_on_pocketed_ball_contact": true,
+        "rolling": "orientation integrated from actual travelled distance with omega = up x v / R"
+    },
+    "pocket_sweep": {
+        "type": "XZ swept-segment sampled association after support loss",
+        "spacing": "0.20 * ball radius",
+        "max_samples": 16
+    },
+    "pocket_capture": {
+        "count": 6,
+        "source": "convex projected hull of each real Pocket_* object",
+        "shape": "slightly tapered open-bottom throat",
+        "top_scale": 1.18,
+        "bottom_scale": 0.92,
+        "depth_ball_radii": 2.25,
+        "commit_requires_lateral_hull_validation": true,
+        "handoff": "dynamic long chute to first BallReturn support below each pocket"
+    },
+    "pocket_physics": {
+        "capture": "real Pocket_* mesh triangle contact",
+        "on_capture": "zero horizontal velocity and angular velocity; gravity-only drop",
+        "center_drop_fallback": "real projected Pocket_* hull"
+    },
+    "trajectory_helper_geometry": "BufferGeometry recreated on rebuild to avoid undersized position buffers",
+    "ball_in_hand": {
+        "trigger": "scratch after SHOT_ENDED",
+        "phase": "BALL_IN_HAND",
+        "interaction": "drag cue ball on PlayingSurface canvas, then confirm",
+        "validity": [
+            "center stays at least one radius inside PlayingSurface Box3",
+            "PlayingSurface support exists below candidate",
+            "candidate is not over a Pocket_* mouth",
+            "candidate does not overlap any in-play object ball"
+        ],
+        "current_rule_scope": "unrestricted anywhere on valid cloth",
+        "camera": {
+            "mode": "automatic perpendicular top-down",
+            "horizontal_orientation": "NEAR left, FAR right",
+            "orientation_source": "real Pocket_* near/far centers",
+            "restore_after": [
+                "confirm",
+                "cancel/reset"
+            ]
+        },
+        "confirm_shortcut": "Enter"
+    },
+    "ruleset_8_ball": {
+        "players": 2,
+        "opening_break": {
+            "cue_placement": "KITCHEN",
+            "legal_break": "object ball pocketed OR >=4 distinct object balls contact rails",
+            "eight_on_break": "RESPOT and continue/open table"
+        },
+        "groups": [
+            "SOLIDS 1-7",
+            "STRIPES 9-15"
+        ],
+        "group_assignment": "first legally pocketed solid/stripe after break on open table",
+        "normal_foul_ball_in_hand": "ANYWHERE",
+        "break_foul_ball_in_hand": "KITCHEN",
+        "called_pocket": "8-ball only, per shot/per player",
+        "eight_win": "on-eight + called pocket + no foul",
+        "eight_loss": [
+            "early 8",
+            "8 off table",
+            "scratch on 8",
+            "foul while pocketing 8",
+            "wrong called pocket"
+        ]
+    },
+    "game_mode": {
+        "mode": "TWO_PLAYER",
+        "players": {
+            "0": "You",
+            "1": "CPU"
+        },
+        "opening_break": "human",
+        "cpu_player_index": 1
+    },
+    "runtime_fix": {
+        "applyRuleActions": "module-scope function declaration",
+        "startBallInHand": "module-scope function declaration",
+        "reason": "avoid init()/animate() scope mismatch completely"
+    },
+    "bot_planner": {
+        "milestone": "planner only; no automatic Player 2 turn yet",
+        "candidate_generation": [
+            "legal target balls from RuleSet state",
+            "ghost-ball target geometry toward real Pocket_* centers",
+            "blocked-path rejection",
+            "cue-clearance query per yaw",
+            "break candidate family",
+            "legal-contact fallback if no pot route exists"
+        ],
+        "simulation": {
+            "fixed_dt": "same PHYSICS.FIXED_DT (240 Hz)",
+            "systems": [
+                "PhysicsWorld",
+                "RailCollisionSystem",
+                "PocketSystem",
+                "PocketCaptureSystem",
+                "CueImpactSystem"
+            ],
+            "visible_cue_is_not_moved": true,
+            "max_simulation_time_seconds": 4.5
+        },
+        "scoring": [
+            "legal first contact",
+            "rail/pocket-after-contact",
+            "scratch penalty",
+            "own/open-table pocket reward",
+            "illegal 8-ball penalty",
+            "called-pocket 8 reward",
+            "cue-ball position bonus",
+            "break legality"
+        ],
+        "ui": [
+            "Plan best shot",
+            "Apply best plan",
+            "predicted result diagnostics"
+        ]
+    },
+    "ball_number_mapping": {
+        "basis": "BaseColor atlas number printed on each Ball_XX UV island",
+        "asset_names_are_semantic_numbers": false,
+        "mapping": {
+            "Ball_00_Cue": 0,
+            "Ball_01": 1,
+            "Ball_02": 7,
+            "Ball_03": 13,
+            "Ball_04": 14,
+            "Ball_05": 8,
+            "Ball_06": 2,
+            "Ball_07": 6,
+            "Ball_08": 9,
+            "Ball_09": 4,
+            "Ball_10": 15,
+            "Ball_11": 10,
+            "Ball_12": 5,
+            "Ball_13": 12,
+            "Ball_14": 3,
+            "Ball_15": 11
+        }
+    },
+    "v0.13.0.2_scope": {
+        "base": "v0.13",
+        "kept_from_v0.13.0.1": [
+            "trajectory preview excludes pocketed/RETURNING/COLLECTED balls",
+            "bot stale-plan signature ignores hidden return movement"
+        ],
+        "intentionally_not_kept_from_v0.13.0.1": [
+            "authoritative RuleSet legal-first API",
+            "shot-start RuleSet context snapshot",
+            "planner hard-rejection legality changes"
+        ],
+        "reason": "re-test whether the observed legality failures were caused by the incorrect asset-number mapping"
+    },
+    "bot_difficulties": {
+        "default": "MEDIUM",
+        "deterministic": true,
+        "profiles": {
+            "EASY": {
+                "routes": 2,
+                "aim_offsets_deg": [
+                    -0.9,
+                    0,
+                    0.9
+                ],
+                "power_factors": [
+                    0.92,
+                    1.08
+                ],
+                "choice": "top-3 only when within 220 score of best",
+                "max_yaw_error_deg": 0.9,
+                "max_power_relative_error": 0.08
+            },
+            "MEDIUM": {
+                "routes": 5,
+                "aim_offsets_deg": [
+                    -0.45,
+                    0,
+                    0.45
+                ],
+                "power_factors": [
+                    0.9,
+                    1.06
+                ],
+                "choice": "best candidate",
+                "max_yaw_error_deg": 0.25,
+                "max_power_relative_error": 0.025
+            },
+            "HARD": {
+                "routes": 7,
+                "aim_offsets_deg": [
+                    -0.45,
+                    -0.225,
+                    0,
+                    0.225,
+                    0.45
+                ],
+                "power_factors": [
+                    0.9,
+                    0.98,
+                    1.06
+                ],
+                "choice": "best candidate",
+                "max_yaw_error_deg": 0,
+                "max_power_relative_error": 0
+            }
+        }
+    },
+    "cpu_turn_controller": {
+        "automatic": true,
+        "flow": [
+            "wait briefly",
+            "plan with BotPlanner",
+            "apply difficulty execution error",
+            "automatically request the real cue stroke",
+            "repeat if CPU legally continues"
+        ],
+        "ball_in_hand": "automatic deterministic candidate placement validated by the same BallInHandSystem rules as human pointer placement",
+        "fallback": "if no planner result is available, aim a center-ball direct-contact shot at the nearest legal target; call nearest pocket when on the 8"
+    },
+    "v0.14.1_fixes": {
+        "illegal_break": "rerack; incoming player gets kitchen placement; after placement table returns to BREAK so planner and rules both treat retry as break",
+        "legal_break_scratch": "keep layout; incoming player gets kitchen BIH; table is OPEN; next shot is not another break",
+        "break_object_off_table": "explicit break foul",
+        "post_break_scratch": "RuleSet remains ANYWHERE; CPU placement now tries whole-table tactical positions before the authored kitchen start"
+    },
+    "v0.15_visual_foundation": {
+        "base": "v0.14.1 stable gameplay",
+        "room_m": [
+            7.6,
+            10.0,
+            3.25
+        ],
+        "models": [
+            "pool_light.glb",
+            "pub_counter.glb",
+            "back_bar.glb",
+            "furniture.glb",
+            "barrel.glb"
+        ],
+        "materials": {
+            "floor": "Wood Floor Worn 2K",
+            "wall": "Beige Wall 001 2K",
+            "wainscot": "Wooden Panels 2K"
+        },
+        "real_pool_light_sources": 3,
+        "camera_changed": false,
+        "final_ui_changed": false,
+        "audio_added": false,
+        "vfx_added": false
+    },
+    "v0.15.1_hotfix": {
+        "pool_light_center_y_m": 2.66,
+        "pool_light_hidden_only_during_human_top_down_bih": true,
+        "visible_emissive_pool_bulbs": 3,
+        "table_spot_intensities": [
+            105,
+            120,
+            105
+        ],
+        "ambient_pendant_fixtures": 3,
+        "left_table_chairs_face_each_other": true,
+        "table_apron_source": "outer vertical faces extracted from BallReturn visual geometry",
+        "BallReturn_physics_proxy_still_hidden": true,
+        "gameplay_physics_changed": false,
+        "rules_changed": false,
+        "camera_math_changed": false
+    },
+    "v0.15.2_priority_fixes": {
+        "base": "v0.15.1",
+        "pool_light": {
+            "shade_centers_local_x": [
+                -0.72,
+                0.0,
+                0.72
+            ],
+            "bulbs_and_spots_share_centers": true,
+            "spot_targets_directly_below_fixture": true
+        },
+        "lighting": {
+            "table_spot_intensity": [
+                68,
+                76,
+                68
+            ],
+            "pendants_changed_from_point_to_spot": true,
+            "ambient_intensity": 0.27
+        },
+        "table_shadow": {
+            "under_slate_visual_shadow_blocker": true,
+            "physics_changed": false
+        },
+        "pendants": {
+            "shade_y": 2.79,
+            "ceiling_rose_flush_to_ceiling": true
+        },
+        "bar": {
+            "counter_z": -2.95,
+            "back_bar_z": -4.76,
+            "back_bar_raise_y": 0.32,
+            "goal": "bartender aisle behind serving counter"
+        },
+        "deferred": [
+            "second decorative billiards table",
+            "larger furniture rearrangement",
+            "cinematic camera"
+        ]
+    },
+    "v0.15.3_real_table_shadow_fix": {
+        "uploaded_billiards_asset_sha256": "eda6c056881d04052a6769f22bef253b608cb931fd1eafc0f35d63594501afee",
+        "synthetic_under_table_blocker_removed": true,
+        "BallReturn": {
+            "uses_exact_imported_geometry": true,
+            "visible_for_shadow_traversal": true,
+            "main_pass_color_write": false,
+            "main_pass_depth_write": false,
+            "castShadow": true,
+            "receiveShadow": true,
+            "double_sided_custom_depth_material": true
+        },
+        "table_shadow_audit": {
+            "PoolTable": true,
+            "PlayingSurface": true,
+            "Rails": true,
+            "Pockets": true,
+            "BallReturn": true
+        },
+        "lighting": {
+            "ambient": 0.35,
+            "table_angle": "PI / 7.2",
+            "bar_pendants": 2,
+            "broad_bar_wash": true
+        }
+    },
+    "v0.15.4_visible_ballreturn_test": {
+        "purpose": "Render BallReturn normally to verify real pocket/side-mouth occlusion in-camera.",
+        "ballReturnVisible": true,
+        "poolTableApronVisible": false,
+        "syntheticUnderTableBlocker": false,
+        "tableLightIntensities": [
+            52,
+            58,
+            52
+        ],
+        "tableLightDistance": 4.4,
+        "tableLightAngle": "PI / 8.8",
+        "tableLightPenumbra": 0.68
+    },
+    "v0.15.4.1_runtime_fix": {
+        "issue": "Three.js WebGLShadowMap crash from customDepthMaterial = null",
+        "fix": "customDepthMaterial left undefined so Three.js generates its standard shadow depth material",
+        "rendering_only": true,
+        "physics_changed": false
+    },
+    "v0.15.5_pool_light_height": {
+        "base": "v0.15.4.1",
+        "BallReturn_rendering": "unchanged: full imported mesh rendered normally",
+        "room_height_m": 3.65,
+        "pool_light_center_y_m": 3.05,
+        "table_light_intensities": [
+            42,
+            47,
+            42
+        ],
+        "table_light_distance": 4.8,
+        "table_light_angle": "PI / 11",
+        "table_light_penumbra": 0.42,
+        "goal": "Raise the physical fixture, keep a compact footprint, remove excessive scalloped darkness, and reduce table overexposure."
+    },
+    "v0.15.6_spherical_pool_lights": {
+        "base": "v0.15.5",
+        "BallReturn_rendering": "unchanged: full imported mesh rendered normally",
+        "pool_bulb_visual": "SphereGeometry radius 0.052 m",
+        "pool_light_type": "THREE.PointLight",
+        "pool_light_intensities": [
+            30,
+            34,
+            30
+        ],
+        "pool_light_distance": 3.35,
+        "pool_light_decay": 2.0,
+        "point_shadow_map": 512,
+        "fixture_casts_shadow": true,
+        "spotlight_angle_removed": true,
+        "spotlight_penumbra_removed": true
+    },
+    "v0.15.7_visual_hotfix": {
+        "base": "v0.15.6",
+        "pool_light": {
+            "type": "three shadow-casting PointLights",
+            "fixture_castShadow": false,
+            "reason": "the imported fixture is a single combined mesh; its support/housing self-shadowed the nearby point sources and created the central blotch",
+            "table_shadowing": "unchanged"
+        },
+        "back_bar": {
+            "raise_y": 0.0,
+            "scale_y": 1.28,
+            "base_remains_on_floor": true
+        }
+    },
+    "v0.15.8_set_dressing": {
+        "new_assets": {
+            "bottles.glb": {
+                "path": "/models/pub/bottles.glb",
+                "sha256": "14512b38689f6aeeb765cea51442c6f360717710d752f7b43640e4e05e296fc5"
+            },
+            "entrance_door.glb": {
+                "path": "/models/pub/entrance_door.glb",
+                "sha256": "fc02bbb9a4ba8310cdd49b2610def58b3a69c5dd9e5080731498309231e69290"
+            },
+            "pub_window.glb": {
+                "path": "/models/pub/pub_window.glb",
+                "sha256": "f56677209ae510a5b27c14d40fb3b7dd62b0094b93d832e787abac5dae75e89b"
+            },
+            "scoreboard.glb": {
+                "path": "/models/pub/scoreboard.glb",
+                "sha256": "fd395920ec2c36a01aa5b803a98b2b44c10b6884ecc1256d0075d337b069b143"
+            },
+            "wall_clock.glb": {
+                "path": "/models/pub/wall_clock.glb",
+                "sha256": "1f5f6583d675f88b8b06497f191b4d6f84b14603f742a5c604a6f4ae15867e28"
+            },
+            "whiskey_set.glb": {
+                "path": "/models/pub/whiskey_set.glb",
+                "sha256": "a177cf392bce7e551a52a6f68b878d8639f54db489556075e8a608ecd44c3f78"
+            },
+            "jukebox.glb": {
+                "path": "/models/pub/jukebox.glb",
+                "sha256": "0db94cdb668e3b7e4679375cf9b4beb8319f80fc4fcc7b1209f5b8dd6ad80231"
+            }
+        },
+        "entrance": {
+            "door_opening_width_m": 2.82,
+            "door_opening_height_m": 2.34,
+            "window_centers_x_m": [
+                -2.45,
+                2.45
+            ],
+            "door_hinge_nodes": [
+                "EntranceDoorLeft",
+                "EntranceDoorRight"
+            ],
+            "window_hinge_nodes": [
+                "WoodenWindowLeft",
+                "WoodenWindowRight"
+            ]
+        },
+        "bar_dressing": {
+            "bottle_instances": 24,
+            "shelf_y_m": [
+                0.84,
+                1.19,
+                1.54
+            ],
+            "whiskey_set": true
+        },
+        "decor": {
+            "jukebox": true,
+            "scoreboard": true,
+            "wall_clock": true,
+            "cue_rack": true,
+            "extra_table": false,
+            "second_decorative_pool_table": false,
+            "additional_tables_deferred": true
+        },
+        "gameplay_changes": false
+    },
+    "v0.15.9_layout_hotfix": {
+        "base": "v0.15.8",
+        "table": {
+            "z_offset_toward_entrance": 0.68,
+            "physics_geometry_moves_with_visual": true,
+            "pool_fixture_follows": true
+        },
+        "bar_decor": {
+            "bottles_moved_into_shelves": true,
+            "whiskey_set_grounded_on_counter": true,
+            "triangle_and_rubber_added": true
+        },
+        "wall_lighting": [
+            "scoreboard picture light",
+            "cue rack picture light"
+        ],
+        "furniture": {
+            "jukebox_side": "two joined tables + four chairs",
+            "clock_side": "two joined tables + four chairs, rotated 90deg"
+        },
+        "exterior": "simple night-street geometry behind entrance windows"
+    },
+    "v0.17_gameplay_presentation": {
+        "base": "v0.16.3",
+        "human_camera": {
+            "free_view": "Q/E orbit around table; WASD bounded head look with body focus toward table",
+            "aim": "Enter; LMB drag yaw/elevation; WASD cue-ball contact; J BEV; K raised 3/4",
+            "distance_constraints": "yaw/elevation freedom and maximum shot power decrease with player-to-cue-ball distance measured at aim entry",
+            "ball_in_hand_return": "animated BEV -> saved pre-BEV human POV"
+        },
+        "human_shot": {
+            "power": "constant-speed oscillating power meter with physical cue backswing preview",
+            "stroke": "loaded backswing -> cue-ball contact -> base aim pose",
+            "post_shot": "camera returns to saved free-view pose; held cue returns to rest presentation"
+        },
+        "kill_turn": {
+            "spectator": "same Q/E + WASD free-view controls as human pre-aim state",
+            "planning_indicator": "real BotPlanner tested/total candidate progress plus explicit stage labels",
+            "cue_animation": "fade in -> planner-selected backswing charge -> stroke -> fade out",
+            "movement_exclusion": "camera cannot walk through the projected backswing corridor while KILL cue is manifested"
+        },
+        "legacy_ui": "hidden in normal play; F2 temporary debug/compatibility toggle"
+    },
+    "v0.17.4_gameplay_vfx_polish": {
+        "break_power_cap": "100% through one kitchen depth, then distance taper",
+        "controls": {
+            "spectator_qe": "reversed",
+            "aim_vertical_mouse_drag": "reversed"
+        },
+        "cpu_cue_fade_s": {
+            "in": 0.95,
+            "out": 0.88
+        },
+        "bot_responsiveness": {
+            "yield_every_candidates": 1,
+            "hidden_debug_dom_sync": false
+        },
+        "illegal_break_rerack_vfx": {
+            "trigger": "RESET_RACK_FOR_REBREAK + displaced coloured ball",
+            "rack_asset": "Rack",
+            "sequence": [
+                "ghost rack fade/descend",
+                "triangular energy prism",
+                "rolling recall to authored starts",
+                "hold",
+                "inverse fade/ascend"
+            ],
+            "physics_solver_paused_during_recall": true,
+            "normal rule continuation_deferred_until_complete": true
+        }
+    },
+    "v0.17.8_break_and_triangle_refactor": {
+        "break_physics": {
+            "normal_max_ball_speed_mps": 4.5,
+            "break_max_ball_speed_mps": 8.5,
+            "implementation": "CueImpactSystem solves normal normalized impact first; break scales resulting linear and angular velocity together",
+            "full_power_center_break": "strong sliding/stun state at rack contact",
+            "rack_gap_m": 2e-05,
+            "rack_normalization": "preserve imported ball identity/row ordering and apex location, repack to equilateral touching lattice"
+        },
+        "triangle_vfx_primitives": [
+            "RACK_RESET: object balls only",
+            "CUE_RECOVER: cue ball only",
+            "CUE_RELEASE: cue ball only"
+        ],
+        "triangle_sequences": {
+            "illegal_break_rack_moved_cue_in_play": [
+                "RACK_RESET",
+                "CUE_RECOVER",
+                "CUE_RELEASE"
+            ],
+            "illegal_break_rack_unchanged_cue_in_play": [
+                "CUE_RECOVER",
+                "CUE_RELEASE"
+            ],
+            "cue_ball_pocketed": [
+                "CUE_RELEASE"
+            ],
+            "other_ball_in_hand_foul": [
+                "CUE_RECOVER",
+                "CUE_RELEASE"
+            ],
+            "illegal_break_with_scratch": [
+                "RACK_RESET if needed",
+                "CUE_RELEASE"
+            ]
+        },
+        "prism_rotation_y_rad": 3.141592653589793,
+        "cue_scratch_pocket_flash": "preserved before release VFX"
+    }
+}
