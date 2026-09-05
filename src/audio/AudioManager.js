@@ -1,8 +1,8 @@
 //Centralizes Web Audio playback, buses, spatial emitters and long-running audio state.
 
 //AUDIO REGISTRY
-const AudioContextCtor = window.AudioContext ?? window.webkitAudioContext;
-const RUNTIME = "/audio/runtime";
+const AudioContextCtor = window.AudioContext;
+const RUNTIME = `${import.meta.env.BASE_URL}audio/runtime`;
 export const AUDIO_ASSETS = Object.freeze({
     cueStrike: {
         url: `${RUNTIME}/billiards/cue_strike_02.ogg`,

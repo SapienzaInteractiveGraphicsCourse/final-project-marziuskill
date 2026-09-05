@@ -1,13 +1,12 @@
 # 🎱 MarziusKill — A Haunted 8-Ball Story
-> Final project for the **Interactive Graphics** course, Sapienza University of Rome
 
-*— Till the Last Shot! —*
+Final project for the **Interactive Graphics** course, Sapienza University of Rome
 
 ---
 
 ## 🎮 Play the Game
 
-> **GitHub Pages:** add the final deployment URL here before submission.
+Go to the [**GitHub Page**](https://sapienzainteractivegraphicscourse.github.io/final-project-marziuskill/).
 
 ---
 
