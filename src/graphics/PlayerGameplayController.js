@@ -674,16 +674,40 @@ export class PlayerGameplayController {
         };
     }
     #getHighThreeQuarterPose() {
-        const aim = this.#getAimCameraPose();
-        const shotDirection = this.cueRig.getShotDirectionWorld(new THREE.Vector3()).normalize();
-        const position = aim.position.clone().addScaledVector(shotDirection, -PLAYER_VIEW.THREE_QUARTER_BACK);
-        position.y += PLAYER_VIEW.THREE_QUARTER_RISE;
-        const target = this.cueBallBody.position.clone().addScaledVector(shotDirection, PLAYER_VIEW.THREE_QUARTER_LOOK_AHEAD);
-        target.y = this.cueBallBody.position.y;
+        const cueBallPosition = this.cueBallBody.position.clone();
+        const cueDirection = this.cueRig.getShotDirectionWorld(new THREE.Vector3()).normalize();
+        const worldUp = new THREE.Vector3(0, 1, 0);
+        // Direction perpendicular to the cue that points as much as possible toward world-up.
+        const cueNormal = worldUp.clone().addScaledVector(cueDirection, -worldUp.dot(cueDirection));
+        if (cueNormal.lengthSq() < 1e-8) {
+            cueNormal.set(0, 0, 1);
+        }
+        else {
+            cueNormal.normalize();
+        }
+        // Reduce the distance from the cue as its elevation grows.
+        // 0 deg  -> scale 1.0
+        // 60 deg -> scale 0.5
+        const elevationRad = THREE.MathUtils.degToRad(this.cueRig.getElevationDeg());
+        const normalOffsetScale = Math.pow(Math.cos(elevationRad), 2);
+        // Move backwards following the actual 3D cue axis.
+        const position = cueBallPosition.clone().addScaledVector(cueDirection, -(PLAYER_VIEW.AIM_CAMERA_BACK + PLAYER_VIEW.THREE_QUARTER_BACK));
+        // Move "above" the cue along its normal.
+        position.addScaledVector(cueNormal, PLAYER_VIEW.THREE_QUARTER_RISE * normalOffsetScale);
+        // Camera looks forward across the playing surface.
+        const tableDirection = new THREE.Vector3(cueDirection.x, 0, cueDirection.z);
+        if (tableDirection.lengthSq() < 1e-8) {
+            tableDirection.set(0, 0, -1);
+        }
+        else {
+            tableDirection.normalize();
+        }
+        const target = cueBallPosition.clone().addScaledVector(tableDirection, PLAYER_VIEW.THREE_QUARTER_LOOK_AHEAD);
+        target.y = cueBallPosition.y;
         return {
             position,
             quaternion: this.#lookQuaternion(position, target),
-            up: new THREE.Vector3(0, 1, 0)
+            up: worldUp
         };
     }
     #updateContactMarker() {

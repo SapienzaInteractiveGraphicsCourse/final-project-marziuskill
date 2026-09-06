@@ -2,3 +2,16 @@ node_modules/
 billiards*.zip
 public/blender/
 public/audio/_sources/
+*.aux
+*.bbl
+*.bcf*
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+report/
+package-lock.json
