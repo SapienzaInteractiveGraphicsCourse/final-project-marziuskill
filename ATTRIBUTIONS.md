@@ -24,7 +24,7 @@ No imported animation clips are used by the project. Imported 3D models are stat
 | Whiskey Decanter/Glass (LowPoly) | Mark Peters | [Sketchfab](https://sketchfab.com/3d-models/whiskey-decanterglass-lowpoly-7fa1cffa9f9243c48582aaf9dfa3a4a4) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 | Antique Wall Clock | 3DGunsmith | [Sketchfab](https://sketchfab.com/3d-models/antique-wall-clock-174a3fc826414bfc9693d9b00f43fe57) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 | Chalkboard | FrodoUndead | [Sketchfab](https://sketchfab.com/3d-models/chalkboard-7ca01a2834384d1a9205e2919a7acb30) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
-| Wooden Barrel | Author listed on the original Sketchfab page | [Sketchfab](https://sketchfab.com/3d-models/wooden-barrel-6d675a48d6584595b516b0b883d37ca0) | CC Attribution |
+| Wooden Barrel | ToxaGrom | [Sketchfab](https://sketchfab.com/3d-models/wooden-barrel-6d675a48d6584595b516b0b883d37ca0) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 
 `public/models/billiards_assets.glb` is a project-organized/re-exported version of Pieter Ferreira's **Pool Table** model. The original model's billiards geometry and table textures are retained as source material, while runtime object separation, naming, placement, interaction and animation are handled by the project.
 

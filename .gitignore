@@ -2,6 +2,7 @@ node_modules/
 billiards*.zip
 public/blender/
 public/audio/_sources/
+report/figures
 *.aux
 *.bbl
 *.bcf*
@@ -13,5 +14,6 @@ public/audio/_sources/
 *.run.xml
 *.synctex.gz
 *.toc
-report/
+*.tex
+*.bib
 package-lock.json
